@@ -147,7 +147,7 @@ const icon = d => { d = d.toLowerCase();
 
 function render(data, live) {
   const c = data.current_condition[0], area = data.nearest_area[0];
-  const desc = (c.lang_zh_tw?.[0]?.value) || c.weatherDesc[0].value;
+  const desc = (c["lang_zh-tw"]?.[0]?.value) || (c.lang_xx?.[0]?.value) || c.weatherDesc[0].value;
   const today = data.weather[0];
   $("loc").textContent = `📍 ${area.areaName[0].value}, ${area.country[0].value}`;
   $("temp").textContent = `${c.temp_C}°`;
@@ -175,7 +175,7 @@ function render(data, live) {
 
   $("hours").innerHTML = today.hourly.map(h => {
     const hh = String(h.time).padStart(4, "0"), p = +h.chanceofrain;
-    const d = h.weatherDesc[0].value;
+    const d = (h["lang_zh-tw"]?.[0]?.value) || (h.lang_xx?.[0]?.value) || h.weatherDesc[0].value;
     return `<div class="card hour"><div class="t">${hh.slice(0,2)}:${hh.slice(2)}</div>
       <div>${icon(d)}</div><div class="tp">${h.tempC}°</div>
       <div class="s">體感 ${h.FeelsLikeC}°<br>降雨 ${p}% · ${h.precipMM}mm</div>

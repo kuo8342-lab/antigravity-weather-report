@@ -12,3 +12,6 @@ desktop.ini
 .env
 .venv/
 env/
+
+# Other local workspace projects
+edge-surf-3d---經典離線衝浪與雪山冒險/
