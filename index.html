@@ -1,72 +1,211 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hello Antigravity</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-      color: #ffffff;
-      text-align: center;
-      padding: 2rem;
-    }
-    .card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(12px);
-      padding: 3.5rem 4rem;
-      border-radius: 24px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-      max-width: 600px;
-      width: 100%;
-    }
-    h1 {
-      font-size: 3.5rem;
-      font-weight: 800;
-      background: linear-gradient(90deg, #38bdf8, #818cf8, #c084fc);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 1.5rem;
-      letter-spacing: -0.02em;
-    }
-    .date-label {
-      font-size: 1.1rem;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      margin-bottom: 0.5rem;
-    }
-    .date {
-      font-size: 2.2rem;
-      font-weight: 600;
-      color: #f8fafc;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Antigravity Weather Report</title>
+<meta name="description" content="台北即時氣象、生活指南、逐時預報與多日趨勢的捲動式報告頁面">
+<style>
+  :root {
+    --bg1: #0f172a; --bg2: #1e293b; --bg3: #334155;
+    --text: #f8fafc; --muted: #94a3b8;
+    --card: rgba(255,255,255,.06); --line: rgba(255,255,255,.15);
+    --a: #38bdf8; --b: #818cf8; --c: #c084fc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-snap-type: y proximity; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", Roboto, Arial, sans-serif;
+    background: linear-gradient(135deg, var(--bg1), var(--bg2) 50%, var(--bg3)) fixed;
+    color: var(--text);
+  }
+  section {
+    min-height: 100vh; scroll-snap-align: start;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 5rem 1.25rem; text-align: center;
+  }
+  .grad {
+    background: linear-gradient(90deg, var(--a), var(--b), var(--c));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  h1 { font-size: clamp(2.4rem, 8vw, 4.5rem); font-weight: 800; letter-spacing: -.02em; }
+  h2 { font-size: clamp(1.6rem, 5vw, 2.4rem); margin-bottom: 2rem; }
+  .sub { color: var(--muted); margin-top: 1rem; letter-spacing: .08em; }
+  .big-temp { font-size: clamp(5rem, 22vw, 10rem); font-weight: 800; line-height: 1; margin: 1.5rem 0 .5rem; }
+  .cond { font-size: 1.6rem; }
+  .hint { position: absolute; bottom: 1.5rem; color: var(--muted); animation: bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(8px); } }
+  #hero { position: relative; }
+
+  .grid { display: grid; gap: 1rem; width: 100%; max-width: 900px;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); backdrop-filter: blur(12px);
+          border-radius: 20px; padding: 1.4rem 1rem; box-shadow: 0 20px 40px rgba(0,0,0,.3); }
+  .card .k { color: var(--muted); font-size: .85rem; margin-bottom: .4rem; }
+  .card .v { font-size: 1.5rem; font-weight: 700; }
+
+  .tips { max-width: 640px; width: 100%; display: grid; gap: 1rem; text-align: left; }
+  .tips .card { font-size: 1.05rem; line-height: 1.7; }
+
+  .scroller { width: 100%; max-width: 1000px; overflow-x: auto; padding-bottom: 1rem; }
+  .hours { display: flex; gap: .8rem; min-width: max-content; }
+  .hour { width: 108px; flex: none; }
+  .hour .t { color: var(--muted); font-size: .9rem; }
+  .hour .tp { font-size: 1.6rem; font-weight: 700; margin: .4rem 0; }
+  .hour .s { font-size: .8rem; color: var(--muted); }
+  .bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); margin-top: .6rem; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--a), var(--b)); }
+
+  .days { display: grid; gap: 1rem; width: 100%; max-width: 900px;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .day .d { font-weight: 700; margin-bottom: .6rem; }
+  .day .r { font-size: 1.5rem; font-weight: 800; margin-bottom: .6rem; }
+  .day .s { color: var(--muted); font-size: .9rem; line-height: 1.7; }
+
+  footer { padding: 2rem 1rem 3rem; text-align: center; color: var(--muted); font-size: .85rem; line-height: 1.8; }
+  footer a { color: var(--a); }
+
+  nav { position: fixed; right: 14px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; z-index: 5; }
+  nav a { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.3); transition: .25s; }
+  nav a.on { background: var(--a); transform: scale(1.5); }
+  @media (max-width: 600px) { nav { display: none; } }
+
+  .reveal { opacity: 0; transform: translateY(32px); transition: opacity .8s ease, transform .8s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; } .reveal { opacity: 1; transform: none; transition: none; } .hint { animation: none; }
+  }
+</style>
 </head>
 <body>
-  <div class="card">
-    <h1>Hello Antigravity</h1>
-    <div class="date-label">Today's Date</div>
-    <div class="date" id="date-display">2026 年 11 月 7 日</div>
-  </div>
+<nav id="dots" aria-label="章節導覽">
+  <a href="#hero" title="首頁"></a><a href="#now" title="即時概況"></a><a href="#tips" title="生活指南"></a>
+  <a href="#hourly" title="逐時預報"></a><a href="#daily" title="多日趨勢"></a>
+</nav>
 
-  <script>
-    const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-    const today = new Date();
-    document.getElementById('date-display').textContent = today.toLocaleDateString('zh-TW', options);
-  </script>
+<section id="hero">
+  <p class="sub reveal" id="loc">載入中…</p>
+  <h1 class="grad reveal">Weather Report</h1>
+  <div class="big-temp grad reveal" id="temp">--°</div>
+  <div class="cond reveal" id="cond">&nbsp;</div>
+  <p class="sub reveal" id="stamp"></p>
+  <div class="hint">↓ 往下捲動</div>
+</section>
+
+<section id="now">
+  <h2 class="grad reveal">📌 即時氣象概況</h2>
+  <div class="grid reveal" id="nowGrid"></div>
+</section>
+
+<section id="tips">
+  <h2 class="grad reveal">💡 貼心生活指南</h2>
+  <div class="tips reveal" id="tipsBox"></div>
+</section>
+
+<section id="hourly">
+  <h2 class="grad reveal">🕒 今日逐時預報</h2>
+  <div class="scroller reveal"><div class="hours" id="hours"></div></div>
+</section>
+
+<section id="daily">
+  <h2 class="grad reveal">📅 未來多日趨勢</h2>
+  <div class="days reveal" id="days"></div>
+</section>
+
+<footer>
+  資料來源：<a href="https://wttr.in" target="_blank" rel="noopener">wttr.in</a> / WorldWeatherOnline<br>
+  <span id="srcNote"></span><br>
+  原始碼與 CLI 報告產生器請見 GitHub repo：antigravity-weather-report
+</footer>
+
+<script>
+// 離線備援快照（取自 weather_md.md，2026-11-07 10:14 台北）
+const SNAPSHOT = {
+  nearest_area: [{ areaName: [{ value: "Taipei" }], country: [{ value: "Taiwan" }] }],
+  current_condition: [{ temp_C: "22", FeelsLikeC: "23", humidity: "87", precipMM: "0.2", pressure: "1024",
+    winddir16Point: "E", windspeedKmph: "15", uvIndex: "0", visibility: "2", cloudcover: "100",
+    weatherDesc: [{ value: "毛毛細雨" }], localObsDateTime: "2026-11-07 10:14 AM" }],
+  weather: [
+    { date: "2026-11-07", mintempC: "22", maxtempC: "24", avgtempC: "22", uvIndex: "1", sunHour: "3.0",
+      astronomy: [{ sunrise: "06:05 AM", sunset: "05:10 PM" }],
+      hourly: [0,300,600,900,1200,1500,1800,2100].map((t,i)=>({ time:String(t), tempC:"22",
+        FeelsLikeC:["25","22","25","25","25","25","22","22"][i],
+        chanceofrain:["36","36","37","48","39","34","25","22"][i],
+        precipMM:["0.1","0.1","0.1","0.2","0.1","0.1","0.0","0.0"][i],
+        weatherDesc:[{value:"Patchy rain"}] })) },
+    { date: "2026-11-08", mintempC: "20", maxtempC: "28", avgtempC: "24", uvIndex: "7", astronomy: [{ sunrise: "06:05 AM", sunset: "05:10 PM" }], hourly: [] },
+    { date: "2026-11-09", mintempC: "17", maxtempC: "23", avgtempC: "20", uvIndex: "1", astronomy: [{ sunrise: "06:06 AM", sunset: "05:09 PM" }], hourly: [] }
+  ]
+};
+
+const $ = id => document.getElementById(id);
+const city = new URLSearchParams(location.search).get("city") || "Taipei";
+const uvLabel = u => u <= 2 ? "低量級" : u <= 5 ? "中量級" : u <= 7 ? "高量級" : u <= 10 ? "過量級" : "危險級";
+const icon = d => { d = d.toLowerCase();
+  return /rain|drizzle|雨/.test(d) ? "🌧️" : /thunder|雷/.test(d) ? "⛈️" : /snow|雪/.test(d) ? "❄️" :
+         /cloud|overcast|雲|陰/.test(d) ? "☁️" : /fog|mist|霧/.test(d) ? "🌫️" : /sun|clear|晴/.test(d) ? "☀️" : "🌤️"; };
+
+function render(data, live) {
+  const c = data.current_condition[0], area = data.nearest_area[0];
+  const desc = (c.lang_zh_tw?.[0]?.value) || c.weatherDesc[0].value;
+  const today = data.weather[0];
+  $("loc").textContent = `📍 ${area.areaName[0].value}, ${area.country[0].value}`;
+  $("temp").textContent = `${c.temp_C}°`;
+  $("cond").textContent = `${icon(desc)} ${desc}`;
+  $("stamp").textContent = `觀測時間 ${c.localObsDateTime || ""}`;
+  $("srcNote").textContent = live ? "✅ 即時資料" : "⚠️ 無法連線 wttr.in，顯示 2026-11-07 的離線快照";
+
+  const items = [
+    ["體感溫度", `${c.FeelsLikeC}°C`], ["相對濕度", `${c.humidity}%`], ["降雨量", `${c.precipMM} mm`],
+    ["大氣壓力", `${c.pressure} hPa`], ["風向風速", `${c.winddir16Point} / ${c.windspeedKmph} km/h`],
+    ["紫外線指數", `${c.uvIndex} (${uvLabel(+c.uvIndex)})`], ["能見度", `${c.visibility} km`], ["雲量覆蓋", `${c.cloudcover}%`],
+    ["日出", `🌅 ${today.astronomy[0].sunrise}`], ["日落", `🌇 ${today.astronomy[0].sunset}`]
+  ];
+  $("nowGrid").innerHTML = items.map(([k,v]) => `<div class="card"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+
+  const t = +c.temp_C, rain = +c.precipMM;
+  const wear = t >= 28 ? "天氣炎熱，建議穿著短袖、透氣薄衫並注意防曬補水。" :
+               t >= 24 ? "氣溫舒適，短袖或薄長袖即可。" :
+               t >= 18 ? "略有涼意，建議著長袖上衣、針織衫或風衣外套。" : "天氣寒冷，請穿著厚外套並注意保暖。";
+  $("tipsBox").innerHTML = [
+    `<div class="card">🧥 <b>穿衣建議</b><br>${wear}</div>`,
+    `<div class="card">☂️ <b>外出提醒</b><br>${rain > 0 ? `目前有降雨（${desc}，約 ${rain} mm），外出請攜帶雨具並注意路面濕滑。` : "目前無明顯降雨，出門可放心。"}</div>`,
+    `<div class="card">🌡️ <b>今日氣溫走勢</b><br>預計最高 <b>${today.maxtempC}°C</b>，最低 <b>${today.mintempC}°C</b>${today.sunHour ? `，日照約 ${today.sunHour} 小時` : ""}。</div>`
+  ].join("");
+
+  $("hours").innerHTML = today.hourly.map(h => {
+    const hh = String(h.time).padStart(4, "0"), p = +h.chanceofrain;
+    const d = h.weatherDesc[0].value;
+    return `<div class="card hour"><div class="t">${hh.slice(0,2)}:${hh.slice(2)}</div>
+      <div>${icon(d)}</div><div class="tp">${h.tempC}°</div>
+      <div class="s">體感 ${h.FeelsLikeC}°<br>降雨 ${p}% · ${h.precipMM}mm</div>
+      <div class="bar"><i style="width:${p}%"></i></div></div>`;
+  }).join("") || '<p class="sub">無逐時資料</p>';
+
+  $("days").innerHTML = data.weather.map(w => `<div class="card day"><div class="d">${w.date}</div>
+    <div class="r">🌡️ ${w.mintempC}° ~ ${w.maxtempC}°</div>
+    <div class="s">平均 ${w.avgtempC}°C<br>紫外線 ${w.uvIndex} (${uvLabel(+w.uvIndex)})<br>🌅 ${w.astronomy[0].sunrise} / 🌇 ${w.astronomy[0].sunset}</div></div>`).join("");
+  observe();
+}
+
+async function load() {
+  try {
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
+    const r = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1&lang=zh-tw`, { signal: ctl.signal });
+    if (!r.ok) throw new Error(r.status);
+    render(await r.json(), true);
+  } catch (e) { render(SNAPSHOT, false); }
+}
+
+// 捲動進場動畫 + 側邊導覽點
+const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add("in")), { threshold: .15 });
+function observe() { document.querySelectorAll(".reveal:not(.in)").forEach(el => io.observe(el)); }
+const dots = [...document.querySelectorAll("#dots a")];
+const so = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) dots.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
+}), { threshold: .5 });
+document.querySelectorAll("section").forEach(s => so.observe(s));
+observe(); load();
+</script>
 </body>
 </html>
-
